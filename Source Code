@@ -1,0 +1,67 @@
+import cv2
+import numpy as np
+from ultralytics import YOLO
+import streamlit as st
+from PIL import Image
+
+# Function for CLAHE image enhancement
+def apply_clahe(image):
+    # Convert to grayscale
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Create a CLAHE object
+    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+    
+    # Apply CLAHE to the grayscale image
+    enhanced_image = clahe.apply(gray)
+    
+    # Convert back to BGR color space
+    enhanced_bgr_image = cv2.cvtColor(enhanced_image, cv2.COLOR_GRAY2BGR)
+    return enhanced_bgr_image
+
+# Function to load YOLOv8 model
+def load_yolo_model():
+    model = YOLO("yolov8x.pt")  # Change this to yolov8n.pt or another model if needed
+    return model
+
+# Function to detect pedestrians
+def detect_pedestrians(model, image):
+    # Run object detection
+    results = model(image)
+    
+    # Annotate the image with detected objects
+    annotated_image = results[0].plot()
+    return annotated_image
+
+# Streamlit interface
+def main():
+    st.title("Pedestrian Detection with CLAHE Enhancement")
+    
+    # Upload Image
+    uploaded_image = st.file_uploader("Choose an image...", type=["jpg", "png", "jpeg"])
+    
+    if uploaded_image is not None:
+        # Convert the uploaded image to an OpenCV format
+        image = np.array(Image.open(uploaded_image))
+        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        
+        # Enhance image using CLAHE
+        enhanced_image = apply_clahe(image)
+        
+        # Display the enhanced image
+        st.subheader("Enhanced Image (CLAHE)")
+        st.image(enhanced_image, channels="BGR", use_column_width=True)
+        
+        # Load YOLOv8 model
+        model = load_yolo_model()
+        
+        # Perform pedestrian detection
+        annotated_image = detect_pedestrians(model, enhanced_image)
+        
+        # Display the results
+        st.subheader("Detected Pedestrians")
+        st.image(annotated_image, channels="BGR", use_column_width=True)
+    
+if __name__ == "__main__":
+    main()
+
